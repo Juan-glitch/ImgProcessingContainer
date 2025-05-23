@@ -1,6 +1,8 @@
 import os
 from PIL import Image
 import shutil
+
+
 # Extensiones válidas para imágenes
 EXTENSIONES_IMAGEN = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff'}
 
@@ -25,57 +27,57 @@ def buscar_imagenes_en_directorio(directorio_base):
 
     return lista_imagenes
 
-def convertir_a_png(img_path, imagenes_png_dir=None):
+def convertir_a_png(img_path, output_dir='output', base_dir=None):
     """
-    Convierte una imagen a PNG optimizado y opcionalmente la mueve a un directorio común.
+    Convierte una imagen a PNG optimizado y la guarda en un directorio de salida
+    manteniendo el árbol de directorios original hasta la imagen.
 
     Args:
         img_path (str): Ruta de la imagen a convertir.
-        imagenes_png_dir (str|None): Si se indica, ruta del directorio donde colocar
-            todas las imágenes en PNG; si no existe, se crea.
+        output_dir (str): Ruta del directorio raíz de salida donde se recreará
+                          la estructura de carpetas. Se crea si no existe.
+        base_dir (str|None): Directorio base desde el que calcular la ruta relativa
+                             de img_path. Por defecto, el directorio de trabajo actual.
 
     Returns:
-        str|None: Ruta del PNG generado o copiado, o None si hubo error.
+        str|None: Ruta del PNG generado o copiado dentro de output_dir,
+                  o None si hubo error.
     """
     if not img_path:
         print("ERROR: No se proporcionó una ruta de imagen válida")
         return None
 
-    if imagenes_png_dir:
-        os.makedirs(imagenes_png_dir, exist_ok=True)
+    # Directorio base para calcular la ruta relativa
+    if base_dir is None:
+        base_dir = os.getcwd()
 
-    carpeta, nombre = os.path.split(img_path)
+    # Rutas y nombres
+    carpeta_imagen, nombre = os.path.split(img_path)
     base, ext = os.path.splitext(nombre)
-    nombre_png = f"{base}.png"
-    destino = os.path.join(imagenes_png_dir or carpeta, nombre_png)
 
+    # Si ya es PNG, copiar directamente
     if ext.lower() == '.png':
-        # Imagen ya era PNG: copiarla
         try:
-            shutil.copy2(img_path, destino)
-            print(f"Copiado → {destino}")
-            return destino
+            shutil.copy2(img_path, output_dir)
+            print(f"Copiado → {output_dir}")
+            return output_dir
         except Exception as e:
             print(f"ERROR copiando {img_path}: {e}")
             return None
 
-    # Para cualquier otro formato, convertir y luego mover/copiar
+    # Para otros formatos, convertir y guardar
     try:
         with Image.open(img_path) as img:
-            if not img:
-                print(f"ERROR abriendo {img_path}")
-                return None
             rgba = img.convert('RGBA')
             paletizada = rgba.quantize(method=Image.FASTOCTREE)
-            paletizada.save(destino, format='PNG', optimize=True)
-            print(f"Convertido → {destino}")
-            return destino
+            paletizada.save(output_dir, format='PNG', optimize=True)
+            print(f"Convertido → {output_dir}")
+            return output_dir
     except Exception as e:
         print(f"ERROR procesando {img_path}: {e}")
         return None
 
-
-def redimensionar_para_cuadro(img_path, max_size, out_path, upscale=False):
+def redimensionar(img_path, max_size, out_path, upscale=False):
     """
     Redimensiona img_path para que quepa dentro de max_size (w, h),
     manteniendo la proporción. Guarda en out_path.

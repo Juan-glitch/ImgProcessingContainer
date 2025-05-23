@@ -3,18 +3,22 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash",
-    "python.defaultInterpreterPath": "/usr/local/bin/python"
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "bradlc.vscode-windsurf",
+        "dbaeumer.vscode-eslint",
+        "Codeium.codeium",
+        "mhutchie.git-graph"
+      ]
+    }
   },
-  "extensions": [
-    "ms-python.python",
-    "ms-python.vscode-pylance",
-    "bradlc.vscode-windsurf",
-    "dbaeumer.vscode-eslint",
-    "Codeium.codeium",
-    "mhutchie.git-graph"
-  ],
   "forwardPorts": [],
   "postCreateCommand": "pip install --upgrade pip && pip install pylint && pip install -r .devcontainer/requirements.txt",
   "remoteUser": "vscode",
