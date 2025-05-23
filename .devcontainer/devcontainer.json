@@ -12,7 +12,8 @@
     "ms-python.vscode-pylance",
     "bradlc.vscode-windsurf",
     "dbaeumer.vscode-eslint",
-    "Codeium.codeium"
+    "Codeium.codeium",
+    "mhutchie.git-graph"
   ],
   "forwardPorts": [],
   "postCreateCommand": "pip install --upgrade pip && pip install pylint && pip install -r .devcontainer/requirements.txt",
