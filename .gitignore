@@ -1,5 +1,6 @@
 # Custom Proyect
 00_Imgs/*
+modules/images/models/FSRCNN_x2.pb
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -174,3 +175,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+

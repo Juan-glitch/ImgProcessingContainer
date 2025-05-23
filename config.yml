@@ -2,8 +2,9 @@
 
 images:
   # === Preprocesado “anticopyright” ===
-  convert_to_png:     true
-  invert:             false
+  convert_to_png:  true  
+  upscale:         true   
+  # invert:          true  
   brightness_factor:  1.05
   contrast_factor:    1.10
   saturation_factor:  1.15

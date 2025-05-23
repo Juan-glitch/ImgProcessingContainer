@@ -1,7 +1,8 @@
 from PIL import Image, ImageEnhance
 
-
 from ..utils import convertir_a_png, redimensionar
+from .imgTransforms import run_transforms
+from .upscale import upscale
 
 def process_image(src_path, dst_path, cfg):
     img = Image.open(src_path).convert("RGBA")
@@ -9,6 +10,8 @@ def process_image(src_path, dst_path, cfg):
     # --- 1) Preprocesado “anticopyright” ---
     if cfg.get("convert_to_png"):
         convertir_a_png(src_path, dst_path)
+    if cfg.get("upscale"):
+        img = upscale(img)
     if cfg.get("resize_generic"):
         img = redimensionar(img, tuple(cfg["generic_max_size"]))
 
