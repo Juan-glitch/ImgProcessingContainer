@@ -1,55 +1,52 @@
-# -*- coding: utf-8 -*-
 import os
-from PIL import Image
-from modules.utils import buscar_imagenes_en_directorio
-from modules.utils import convertir_a_png
-from modules.utils import redimensionar_para_cuadro
+import argparse
 
-# --- Ejecución del pipeline ---
+from pathlib import Path
+from modules.images.imgPipeline import batch_process_images
+from modules.icons.iconPipeline import batch_process_svgs
 
-def main():
-    # defines
-    MAX_WIDTH  = 512
-    MAX_HEIGHT = 512
 
-    ruta_directorio = "./00_Imgs"  # Reemplaza esto con la ruta real
-    salida_png = "./imagenes_en_png"   # Directorio opcional donde volcar todos los PNG
-    imagenes = buscar_imagenes_en_directorio(ruta_directorio)
-    
-    print(f"Se encontraron {len(imagenes)} imágenes:")
 
-    for img in imagenes:
-        nombre_base = os.path.splitext(os.path.basename(img))[0]
-        final_png   = os.path.join(salida_png, f"{nombre_base}_resized.png")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Procesa imágenes y/o SVGs en lote según una configuración YAML."
+    )
 
-        # 1) Convertir a PNG optimizado — pasamos el directorio, no un archivo
-        ruta_png = convertir_a_png(img, imagenes_png_dir=salida_png)
-        if ruta_png:
-            size_kb = os.path.getsize(ruta_png) // 1024
-            print(f"{ruta_png} → {size_kb} KB")
-        else:
-            print(f"ERROR procesando {img}, no se generó PNG válido.")
+    parser.add_argument(
+        "-c", "--config",
+        type=str,
+        required=True,
+        help="Ruta al fichero de configuración YAML"
+    )
 
-        print(f"[PNG] {os.path.basename(ruta_png)} → {size_kb} KB")
+    args = parser.parse_args()
 
-        # 2) Redimensionar al cuadro delimitante
-        redimensionado = redimensionar_para_cuadro(
-            ruta_png,
-            (MAX_WIDTH, MAX_HEIGHT),
-            final_png,
-            upscale=True    # <- True para ampliar las imágenes pequeñas
-        )
-        with Image.open(redimensionado) as im:
-            w, h = im.size
-        print(f"[RED] {os.path.basename(redimensionado)} → {w}×{h} px\n")
+    # Carga de configuración
+    cfg = load_config(args.config)
 
-        # (Opcional) borrar el PNG intermedio si solo quieres el final
-        os.remove(ruta_png)
+    # Obtiene src y dst del YAML (o usa valores por defecto)
+    src_root = Path(cfg.get("src", "./00_Imgs"))
+    dst_root = Path(cfg.get("dst", "./output"))
+    os.makedirs(dst_root, exist_ok=True)
 
-    print("Pipeline completado. Revisa:", salida_png)
+    # Secciones opcionales
+    img_cfg: Dict[str, Any] = cfg.get("images", {})
+    ico_cfg: Dict[str, Any] = cfg.get("icons", {})
+
+    # Procesamiento condicional
+    if img_cfg:
+        print(f"→ Procesando imágenes ráster de '{src_root}' a '{dst_root}'")
+        batch_process_images(str(src_root), str(dst_root), img_cfg)
+    else:
+        print("→ Sección 'images' no encontrada en la configuración. Se omite procesamiento ráster.")
+
+    if ico_cfg:
+        print(f"→ Procesando iconos SVG de '{src_root}' a '{dst_root}'")
+        batch_process_svgs(str(src_root), str(dst_root), ico_cfg)
+    else:
+        print("→ Sección 'icons' no encontrada en la configuración. Se omite procesamiento SVG.")
 
 if __name__ == "__main__":
     main()
 
-
-    
+    print("Proceso finalizado.")

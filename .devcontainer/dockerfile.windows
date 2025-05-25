@@ -1,0 +1,30 @@
+FROM debian:bullseye
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WINEARCH=win32
+ENV WINEPREFIX=/root/.wine
+
+# Instalar arquitectura i386 y dependencias
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y \
+    wine:i386 wine32 wget curl unzip \
+    python3 python3-pip python3-venv python3-dev \
+    build-essential libffi-dev libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar PyInstaller
+RUN pip3 install --no-cache-dir pyinstaller
+
+# Establecer directorio de trabajo
+WORKDIR /src
+
+# Copiar todo el contenido del workspace al directorio de trabajo
+COPY .. .
+
+# Ejecutar PyInstaller para crear el ejecutable Windows
+RUN pyinstaller --onefile --clean --noconfirm \
+    --name=main_bin \
+    --add-data=config.yml:. \
+    main.py
+
+# Mensaje al finalizar el build
+CMD echo "✅ Compilación completa. El ejecutable está en /src/dist/main_bin.exe"

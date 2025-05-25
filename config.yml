@@ -1,33 +1,33 @@
 # config.yaml
 
+# Directorios raíz (opcionales – tienen valores por defecto si faltan)
+src: "./00_Imgs"
+dst: "./output"
+
+# Configuración general
 images:
   # === Preprocesado “anticopyright” ===
   convert_to_png:  true  
   upscale:         true   
-  # invert:          true  
+  invert:          true  
   brightness_factor:  1.05
   contrast_factor:    1.10
   saturation_factor:  1.15
-  # resize_generic:   [600, 950]   # ancho × alto exacto
+  resize_generic:   [100, 75]   # ancho × alto exacto
 
   # === Pasos nuevos de calidad de salida ===
-  
-  # dpi:                178
-  # output_size:        [600, 950]   # ancho × alto exacto
-  white_replace:      true
-  white_src:          [255, 255, 255]
-  white_dst:          [235, 235, 235]
+  dpi:                178
 
 icons:
   # === Pipeline SVG ===
-  copy_svg:           true
-  rasterize_to_png:   false
+  copy_svg:           true 
+  rasterize_to_png:   true
   dpi:                178
 
   # Máximos por categoría
   max_size:
-    group:            [100, 70]
-    recipe:           [160, 90]
+    group:            [500, 500]
+    # recipe:           [160, 90]
 
   # White-wash para iconos rasterizados
   white_replace:      true
