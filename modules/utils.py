@@ -3,11 +3,38 @@ from pathlib import Path
 from PIL import Image
 import os
 import shutil
+import yaml
+from typing import List, Tuple, Union, Dict, Any
 
 EXTENSIONES_IMAGEN = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff']
 EXTENSIONES_SVG = ['.svg']
 
 
+def load_config(path: str) -> Dict[str, Any]:
+    """
+    Carga la configuración desde un archivo YAML.
+
+    Args:
+        path (str): ruta del archivo de configuración
+
+    Returns:
+        Dict[str, Any]: Diccionario con la configuración cargada.
+    """
+    # Abrimos el archivo en modo de lectura (con encoding utf-8 porque
+    # los archivos de configuración pueden tener caracteres especiales)
+    with open(path, encoding="utf-8") as f:
+        # Utilizamos la función yaml.safe_load() para cargar el contenido
+        # del archivo en un diccionario. Esta función es "segura" porque
+        # no permite la ejecución de código arbitrario.
+        cfg = yaml.safe_load(f)  # type: ignore
+
+    # Verificamos que la configuración cargada sea un diccionario.
+    # Si no lo es, lanzamos una excepción con un mensaje descriptivo.
+    if not isinstance(cfg, dict):
+        raise ValueError("El archivo de configuración debe ser un diccionario.")
+    
+    # Finalmente, devolvemos el diccionario cargado
+    return cfg
 def buscar_imagenes_en_directorio(directorio_base: Path) -> List[Path]:
     """
     Busca imágenes en el directorio base y sus subdirectorios.
