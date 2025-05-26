@@ -32,16 +32,16 @@ def main() -> None:
     img_cfg: Optional[Dict[str, Any]] = cfg.get("images")
     ico_cfg: Optional[Dict[str, Any]] = cfg.get("icons")
 
-    # # Procesar imágenes raster si se proporciona configuración
-    # if img_cfg is not None:
-    #     # Obtener rutas de origen y destino (usar valores por defecto si no se especifican)
-    #     img_src_root: Path = Path(img_cfg.get("src", "./imgsProcesar"))
-    #     img_dst_root: Path = Path(img_cfg.get("dst", "./outputImgs"))
-    #     img_dst_root.mkdir(parents=True, exist_ok=True)
-    #     print(f"→ Procesando imágenes ráster desde '{img_src_root}' hacia '{img_dst_root}'")
-    #     batch_process_images(str(img_src_root), str(img_dst_root), img_cfg)
-    # else:
-    #     print("→ Sección 'images' no encontrada en la configuración. Se omite el procesamiento de imágenes ráster.")
+    # Procesar imágenes raster si se proporciona configuración
+    if img_cfg is not None:
+        # Obtener rutas de origen y destino (usar valores por defecto si no se especifican)
+        img_src_root: Path = Path(img_cfg.get("src", "./imgsProcesar"))
+        img_dst_root: Path = Path(img_cfg.get("dst", "./outputImgs"))
+        img_dst_root.mkdir(parents=True, exist_ok=True)
+        print(f"→ Procesando imágenes ráster desde '{img_src_root}' hacia '{img_dst_root}'")
+        batch_process_images(str(img_src_root), str(img_dst_root), img_cfg)
+    else:
+        print("→ Sección 'images' no encontrada en la configuración. Se omite el procesamiento de imágenes ráster.")
 
     # Procesar iconos SVG si se proporciona configuración
     if ico_cfg is not None:

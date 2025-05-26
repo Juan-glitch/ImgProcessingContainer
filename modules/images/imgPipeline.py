@@ -39,7 +39,6 @@ def process_image(
     if cfg is not None and cfg.get("convert_to_png"):
         # If the configuration specifies to convert to PNG, do so and save directly
         convertir_a_png(src_path, dst_path)
-        return
 
     if cfg is not None and cfg.get("upscale"):
         # If the configuration specifies to upscale, apply super-resolution to enhance image quality
@@ -79,7 +78,7 @@ def batch_process_images(src_dir: str, dst_dir: str, cfg: Dict[str, Any]) -> Non
         None
     """
     os.makedirs(dst_dir, exist_ok=True)
-    images: List[os.PathLike] = buscar_imagenes_en_directorio(src_dir)
+    images: List[os.PathLike] = buscar_imagenes_en_directorio(src_dir) # type: ignore
 
     # Barra de progreso con tqdm
     for src_path in tqdm(images, desc="Procesando imágenes", unit="imagen"):

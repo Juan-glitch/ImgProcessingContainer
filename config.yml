@@ -14,10 +14,10 @@ images:
   brightness_factor:  1.05
   contrast_factor:    1.10
   saturation_factor:  1.15
-  resize_generic:   [100, 75]   # ancho × alto exacto
+  resize_generic:   [50, 50]   # ancho × alto exacto
 
   # === Pasos nuevos de calidad de salida ===
-  dpi:                178
+  dpi:                200
 
 icons:
   # Directorios raíz (opcionales – tienen valores por defecto si faltan)
@@ -25,13 +25,12 @@ icons:
   dst: "./outputIcons"
   # === Pipeline SVG ===
   copy_svg:           true 
-  rasterize_to_png:   true
-  dpi:                178
+  dpi:                300
 
   # Máximos por categoría
   max_size:
-    group:            [500, 500]
-    # recipe:           [160, 90]
+    group:            [100, 100]
+
 
   # White-wash para iconos rasterizados
   white_replace:      true
