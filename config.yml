@@ -1,11 +1,12 @@
 # config.yaml
 
-# Directorios raíz (opcionales – tienen valores por defecto si faltan)
-src: "./00_Imgs"
-dst: "./output"
 
 # Configuración general
 images:
+  # Directorios raíz (opcionales – tienen valores por defecto si faltan)
+  src: "./imgsProcesar"
+  dst: "./outputImgs"
+
   # === Preprocesado “anticopyright” ===
   convert_to_png:  true  
   upscale:         true   
@@ -19,6 +20,9 @@ images:
   dpi:                178
 
 icons:
+  # Directorios raíz (opcionales – tienen valores por defecto si faltan)
+  src: "./iconosProcesar"
+  dst: "./outputIcons"
   # === Pipeline SVG ===
   copy_svg:           true 
   rasterize_to_png:   true

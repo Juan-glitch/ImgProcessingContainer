@@ -7,7 +7,7 @@ import yaml
 from typing import List, Tuple, Union, Dict, Any
 
 EXTENSIONES_IMAGEN = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff']
-EXTENSIONES_SVG = ['.svg']
+EXTENSIONES_ICONO = ['.svg', '.png']
 
 
 def load_config(path: str) -> Dict[str, Any]:
@@ -73,7 +73,7 @@ def buscar_svgs_en_directorio(
     for carpeta_raiz, _, archivos in os.walk(directorio_base):
         for archivo in archivos:
             ruta_completa = Path(carpeta_raiz) / archivo            
-            if ruta_completa.suffix.lower() in EXTENSIONES_SVG:
+            if ruta_completa.suffix.lower() in EXTENSIONES_ICONO:
                 lista_svgs.append(ruta_completa)
 
     return lista_svgs

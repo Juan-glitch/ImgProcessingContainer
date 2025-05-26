@@ -1,153 +1,139 @@
 import os
 from PIL import Image
 from typing import Optional, Dict, Any, List, Tuple, Union
-from ..utils import  buscar_svgs_en_directorio
-from tqdm import tqdm
-from typing import Union
 import io
 import cairosvg
-from PIL import Image
+from tqdm import tqdm
 
-def _replace_white(img: Image.Image, src_rgb: Tuple[int, int, int], dst_rgb: Tuple[int, int, int]) -> Image.Image:
-    """Reemplaza todos los píxeles blancos de una imagen con un color especificado.
 
-    Args:
-        img: La imagen que se va a modificar.
-        src_rgb: El color RGB original (r, g, b) que se va a reemplazar.
-        dst_rgb: El color RGB destino (r, g, b) que se va a asignar.
-
-    Returns:
-        La imagen modificada.
-    """
+def _replace_white(
+    img: Image.Image,
+    src_rgb: Tuple[int, int, int],
+    dst_rgb: Tuple[int, int, int]
+) -> Image.Image:
+    """Reemplaza todos los píxeles de un color origen con otro color destino."""
     if img is None:
         raise ValueError("No se proporcionó una imagen para reemplazar colores")
-    
     try:
         px = img.load()
     except Exception as e:
-        raise ValueError("No se pudo cargar la imagen: {}".format(e))
-    
+        raise ValueError(f"No se pudo cargar la imagen: {e}")
+
     w, h = img.size
     for x in range(w):
         for y in range(h):
             if px[x, y][:3] == src_rgb:
-                px[x, y] = dst_rgb + (px[x, y][3],)
-
+                # Mantener canal alfa si existe
+                alpha = px[x, y][3] if len(px[x, y]) == 4 else 255
+                px[x, y] = dst_rgb + (alpha,)
     return img
 
-def convertir_svg_a_png(src_svg: str, dpi: int = 96) -> Union[Image.Image, None]:
+
+def _open_source_image(
+    src_path: str,
+    dpi: int
+) -> Image.Image:
     """
-    Rasteriza un SVG a una imagen PIL usando CairoSVG.
+    Abre un archivo .svg o .png y devuelve una imagen RGBA.
 
-    Args:
-        src_svg (str): La ruta del archivo SVG a rasterizar.
-        dpi (int): La resolución de salida en píxeles por pulgada.
+    - SVG: rasteriza con CairoSVG
+    - PNG: abre directamente con PIL
 
-    Returns:
-        Union[Image.Image, None]: La imagen rasterizada como objeto PIL.Image, o None si ocurre un error.
-
-    Raises:
-        ValueError: Si no se pudo leer o rasterizar el SVG.
+    :raises ValueError: si el formato no es soportado o falla la apertura.
     """
-    try:
-        png_bytes: bytes = cairosvg.svg2png(url=src_svg, dpi=dpi)
-    except Exception as e:
-        raise ValueError(f"No se pudo leer o rasterizar el SVG: {e}")
+    ext = os.path.splitext(src_path)[1].lower()
+    if ext == '.svg':
+        try:
+            png_bytes = cairosvg.svg2png(url=src_path, dpi=dpi)
+            return Image.open(io.BytesIO(png_bytes)).convert('RGBA')
+        except Exception as e:
+            raise ValueError(f"Error al rasterizar SVG {src_path}: {e}")
+    elif ext in ['.png']:
+        try:
+            img = Image.open(src_path).convert('RGBA')
+            img.info['dpi'] = (dpi, dpi)
+            return img
+        except Exception as e:
+            raise ValueError(f"Error al abrir PNG {src_path}: {e}")
+    else:
+        raise ValueError(f"Formato no soportado: {ext}")
 
-    try:
-        return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-    except Exception as e:
-        raise ValueError(f"No se pudo leer la imagen PNG generada: {e}")
 
-
-def process_svg_icon(
+def process_icon(
     src_path: str,
     dst_path: str,
-    cfg: Optional[Dict[str, Any]] = None
+    cfg: Dict[str, Any]
 ) -> None:
     """
-    Procesa un icono SVG según la configuración proporcionada.
+    Procesa un icono (.svg o .png) según configuración:
 
-    La configuración es un diccionario que puede tener las siguientes claves:
-    - rasterize_to_png: Si es True, rasteriza el icono SVG a PNG y lo procesa.
-    - max_size: Un diccionario con claves "group" y "recipe" que especifican el tamaño máximo para cada categoría.
+    - Rasteriza SVG si aplica
+    - Redimensiona al max_size por categoría
+    - Reemplaza color blanco si indicado
+    - Guarda siempre como PNG optimizado
 
-    Si no se proporciona configuración, el icono se procesa sin cambios.
-
-    :param src_path: Ruta del icono SVG de origen
-    :param dst_path: Ruta del icono procesado
-    :param cfg: Configuración de procesamiento
-    :return: None
+    :param src_path: ruta origen (.svg/.png)
+    :param dst_path: ruta destino (sin extensión)
+    :param cfg: configuración con claves obligatorias:
+        - dpi: int
+        - max_size: dict con 'group' o 'recipe': (w, h)
+        - white_replace: bool opcional
+        - white_src: tuple(r,g,b) opcional
+        - white_dst: tuple(r,g,b) opcional
     """
-    if cfg is None:
-        raise ValueError("No se proporcionó una configuración para procesar el icono")
+    # Validar cfg mínimo
+    if 'dpi' not in cfg or 'max_size' not in cfg:
+        raise ValueError("La configuración debe incluir 'dpi' y 'max_size'")
 
-    # Abrir el icono SVG y convertirlo a RGBA
+    # Cargar imagen origen
+    img = _open_source_image(src_path, cfg['dpi'])
+
+    # Determinar categoría y tamaño máximo
+    sizes = cfg['max_size']
+    if 'group' in sizes and 'recipe' in sizes:
+        raise ValueError("Solo puede haber una categoría en max_size: 'group' o 'recipe'.")
+    category = 'group' if 'group' in sizes else 'recipe'
+    max_w, max_h = sizes[category]
+
+    # Redimensionar
+    img.thumbnail((max_w, max_h), Image.LANCZOS)
+
+    # Reemplazar color blanco si requerido
+    if cfg.get('white_replace', False):
+        if 'white_src' not in cfg or 'white_dst' not in cfg:
+            raise ValueError("Para white_replace se necesitan 'white_src' y 'white_dst'.")
+        img = _replace_white(img, tuple(cfg['white_src']), tuple(cfg['white_dst']))
+
+    # Guardar como PNG optimizado
+    dst_png = os.path.splitext(dst_path)[0] + '.png'
+    os.makedirs(os.path.dirname(dst_png), exist_ok=True)
     try:
-        img = convertir_svg_a_png(src_path, cfg["dpi"])
-        img.info['dpi'] = (cfg["dpi"], cfg["dpi"])
-    except KeyError as e:
-        raise ValueError(f"La configuración debe tener una clave 'dpi': {e}")
+        img.save(dst_png, 'PNG', optimize=True, dpi=(cfg['dpi'], cfg['dpi']))
     except Exception as e:
-        raise ValueError(f"Error al rasterizar {src_path}: {e}")
-
-    # Rasterizar y procesar icono SVG
-    png_dst: str = os.path.splitext(dst_path)[0] + ".png"
-    # rasterizar primero
-    png_dst: str = os.path.splitext(dst_path)[0] + ".png"
-    # rasterizar directamente a PIL.Image
-    png_dst: str = os.path.splitext(dst_path)[0] + ".png"
+        raise ValueError(f"No se pudo guardar {dst_png}: {e}")
 
 
-    # Verificar si existen ambas categorías en max_size
-    if "group" in cfg["max_size"] and "recipe" in cfg["max_size"]:
-        raise ValueError("Solo puede haber una categoría en max_size: group o recipe")
-
-    # Detectar categoría y limitar tamaño
-    cat: str = "group" if "group" in cfg["max_size"] else "recipe"
-    max_w: int
-    max_h: int
-    max_w, max_h = tuple(cfg["max_size"][cat])
-    img.thumbnail((max_w, max_h), Image.LANCZOS)  # Redimensionar imagen
-
-    # White-wash
-    if cfg.get("white_replace"):
-        try:
-            _replace_white(img,  # Reemplazar colores blancos
-                tuple(cfg["white_src"]),
-                tuple(cfg["white_dst"])
-            )
-        except KeyError as e:
-            raise ValueError(f"La configuración debe tener las claves 'white_src' y 'white_dst': {e}")
-
-    try:
-        img.save(png_dst, "PNG", optimize=True,  # Guardar imagen en PNG
-                    dpi=(cfg["dpi"], cfg["dpi"]))
-    except IOError as e:
-        raise ValueError(f"No se pudo guardar el archivo {png_dst}: {e}")
-
-def batch_process_svgs(src_dir: str, dst_dir: str, cfg: Dict[str, Any]) -> None:
+def batch_process_icons(
+    src_dir: str,
+    dst_dir: str,
+    cfg: Dict[str, Any]
+) -> None:
     """
-    Copia o convierte SVGs de un directorio de origen al de destino,
-    mostrando una barra de progreso.
-
-    Args:
-        src_dir (str): Directorio de origen donde se encuentran los SVGs.
-        dst_dir (str): Directorio de destino donde se guardarán los SVGs procesados.
-
-    Returns:
-        None
+    Procesa en lote todos los .svg y .png en un directorio recursivamente.
+    Mantiene estructura de carpetas.
     """
     os.makedirs(dst_dir, exist_ok=True)
-    svgs: List[os.PathLike] = buscar_svgs_en_directorio(src_dir)
+    # Recorrer archivos
+    file_list: List[str] = []
+    for root, _, files in os.walk(src_dir):
+        for f in files:
+            if f.lower().endswith(('.svg', '.png')):
+                file_list.append(os.path.join(root, f))
 
-    for src_path in tqdm(svgs, desc="Procesando SVGs", unit="svg"):
-        rel_path: str = os.path.relpath(src_path, src_dir)
-        dst_path: str = os.path.join(dst_dir, rel_path)
-
-        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-
+    for src_path in tqdm(file_list, desc="Procesando iconos", unit="icono"):
+        rel = os.path.relpath(src_path, src_dir)
+        dst_path = os.path.join(dst_dir, rel)
         try:
-            process_svg_icon(str(src_path), str(dst_path), cfg)
+            process_icon(src_path, dst_path, cfg)
         except Exception as e:
-            print(f"Error al procesar {src_path}: {e}")
+            print(f"Error en {src_path}: {e}")
